@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>فني فلاتر المياه</title>
+<meta name="description" content="تطبيق فني صيانة فلاتر المياه - إدارة العملاء والفواتير">
+<meta name="theme-color" content="#0E1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="فني فلاتر">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07080F;
+  --bg2: #0E1220;
+  --bg3: #161D2E;
+  --bg4: #1E2740;
+  --bg5: #243050;
+  --blue: #2563EB;
+  --blue-light: #3B82F6;
+  --blue-glow: rgba(37,99,235,0.25);
+  --cyan: #06B6D4;
+  --green: #10B981;
+  --green-glow: rgba(16,185,129,0.2);
+  --orange: #F59E0B;
+  --orange-glow: rgba(245,158,11,0.2);
+  --red: #EF4444;
+  --red-glow: rgba(239,68,68,0.2);
+  --text: #E8EEFF;
+  --text2: #94A3C0;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; overflow:hidden; }
+body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); }
+
+/* ── APP SHELL ── */
+#app { height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ── SCREENS ── */
+.screen { display:none; flex-direction:column; flex:1; overflow:hidden; }
+.screen.active { display:flex; }
+
+/* ── TOP BAR ── */
+.topbar {
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:13px 16px 13px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+  position:relative;
+}
+.topbar::after {
+  content:''; position:absolute; bottom:-1px; left:0; right:0;
+  height:1px; background:linear-gradient(90deg,transparent,var(--blue),transparent);
+}
+.tb-title { font-size:15px; font-weight:800; letter-spacing:.3px; }
+.tb-btn {
+  width:36px; height:36px; border-radius:10px;
+  background:var(--bg3); border:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:17px; transition:all .15s;
+}
+.tb-btn:active { transform:scale(.92); background:var(--bg4); }
+
+/* ── SCROLL AREA ── */
+.scroll { flex:1; overflow-y:auto; padding:14px 14px 80px; -webkit-overflow-scrolling:touch; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  background:var(--bg2); border-top:1px solid var(--border);
+  display:flex; flex-shrink:0;
+  padding-bottom:max(env(safe-area-inset-bottom), 8px);
+}
+.nav-btn {
+  flex:1; padding:10px 4px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  cursor:pointer; transition:all .2s; border:none; background:none;
+}
+.nav-btn .ni { font-size:20px; transition:transform .2s; }
+.nav-btn .nl { font-size:10px; color:var(--text2); font-family:'Cairo',sans-serif; transition:color .2s; }
+.nav-btn.active .nl { color:var(--blue-light); }
+.nav-btn.active .ni { transform:scale(1.2); }
+
+/* ── CARDS ── */
+.card {
+  background:var(--bg3); border-radius:16px;
+  border:1px solid var(--border); margin-bottom:10px;
+  overflow:hidden;
+}
+.card-pad { padding:14px; }
+.card-head { font-size:11px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+
+/* ── STAT GRID ── */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.stat-box {
+  background:var(--bg3); border-radius:14px; border:1px solid var(--border);
+  padding:14px 12px; text-align:center; position:relative; overflow:hidden;
+}
+.stat-box::before { content:''; position:absolute; top:-20px; right:-20px; width:60px; height:60px; border-radius:50%; opacity:.15; }
+.stat-box.s-wait::before { background:var(--orange); }
+.stat-box.s-done::before { background:var(--green); }
+.stat-num { font-size:32px; font-weight:900; line-height:1; }
+.stat-box.s-wait .stat-num { color:var(--orange); }
+.stat-box.s-done .stat-num { color:var(--green); }
+.stat-lbl { font-size:11px; color:var(--text2); margin-top:3px; }
+
+/* ── FILTER TABS ── */
+.tabs { display:flex; gap:7px; margin-bottom:12px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+.tabs::-webkit-scrollbar { display:none; }
+.tab {
+  padding:7px 15px; border-radius:20px; border:1px solid var(--border2);
+  background:var(--bg3); font-family:'Cairo',sans-serif; font-size:12px;
+  font-weight:700; color:var(--text2); cursor:pointer; white-space:nowrap;
+  transition:all .2s;
+}
+.tab.on { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+/* ── CUSTOMER CARD ── */
+.cust-card {
+  background:var(--bg3); border-radius:15px; border:1px solid var(--border);
+  margin-bottom:9px; overflow:hidden; cursor:pointer;
+  transition:transform .15s; position:relative;
+}
+.cust-card:active { transform:scale(.985); }
+.cust-stripe { height:3px; width:100%; }
+.cust-stripe.wait { background:linear-gradient(90deg, var(--orange), #FBBF24); }
+.cust-stripe.done { background:linear-gradient(90deg, var(--green), #34D399); }
+.cust-body { padding:13px 13px 10px; }
+.cust-row1 { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:5px; }
+.cust-name { font-size:15px; font-weight:800; }
+.status-pill {
+  font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px;
+}
+.status-pill.wait { background:var(--orange-glow); color:var(--orange); border:1px solid rgba(245,158,11,.3); }
+.status-pill.done { background:var(--green-glow); color:var(--green); border:1px solid rgba(16,185,129,.3); }
+.cust-addr { font-size:12px; color:var(--text2); margin-bottom:4px; display:flex; align-items:center; gap:4px; }
+.cust-note { font-size:11px; color:var(--text2); background:var(--bg4); border-radius:8px; padding:6px 9px; margin-bottom:10px; line-height:1.5; border-right:3px solid var(--blue); }
+.cust-btns { display:flex; gap:7px; }
+.cab {
+  flex:1; padding:9px 4px; border-radius:10px; border:none; cursor:pointer;
+  font-family:'Cairo',sans-serif; font-size:12px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; gap:4px;
+  transition:opacity .15s;
+}
+.cab:active { opacity:.7; }
+.cab-call { background:var(--green-glow); color:var(--green); border:1px solid rgba(16,185,129,.3); }
+.cab-map  { background:var(--blue-glow); color:var(--blue-light); border:1px solid rgba(59,130,246,.3); }
+.cab-work { background:var(--orange-glow); color:var(--orange); border:1px solid rgba(245,158,11,.3); }
+.cab-view { background:var(--bg4); color:var(--text2); border:1px solid var(--border2); }
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border:2px dashed rgba(37,99,235,.4); border-radius:16px; padding:28px 20px;
+  text-align:center; cursor:pointer; background:rgba(37,99,235,.04);
+  transition:all .2s; margin-bottom:14px; position:relative; overflow:hidden;
+}
+.upload-zone:active { background:rgba(37,99,235,.1); border-color:var(--blue); }
+.uz-icon { font-size:42px; margin-bottom:10px; }
+.uz-title { font-size:14px; font-weight:800; color:var(--blue-light); margin-bottom:4px; }
+.uz-sub { font-size:12px; color:var(--text2); line-height:1.5; }
+#imgInput { display:none; }
+
+/* ── OCR STATUS ── */
+.ocr-box { background:var(--bg4); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid rgba(6,182,212,.2); }
+.ocr-img { width:100%; border-radius:10px; margin-bottom:10px; max-height:160px; object-fit:cover; }
+.ocr-loader { text-align:center; padding:24px; }
+.spin { display:inline-block; font-size:32px; animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.ocr-txt { font-size:13px; color:var(--cyan); margin-top:8px; font-weight:600; }
+.ocr-parsed { background:var(--bg3); border-radius:10px; padding:12px; border:1px solid var(--border2); }
+.ocr-row { display:flex; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.ocr-row:last-child { border-bottom:none; }
+.ocr-key { color:var(--text2); width:90px; flex-shrink:0; font-size:11px; font-weight:700; }
+.ocr-val { color:var(--text); font-weight:600; }
+
+/* ── FORM ── */
+.fg { margin-bottom:11px; }
+.flbl { font-size:11px; font-weight:700; color:var(--text2); margin-bottom:5px; display:block; text-transform:uppercase; letter-spacing:.4px; }
+.finp, .fsel, .ftxt {
+  width:100%; background:var(--bg4); border:1px solid var(--border2);
+  border-radius:11px; padding:11px 13px; color:var(--text);
+  font-family:'Cairo',sans-serif; font-size:13px; outline:none;
+  transition:border-color .2s;
+}
+.finp:focus, .fsel:focus, .ftxt:focus { border-color:var(--blue-light); }
+.fsel option { background:var(--bg2); }
+.ftxt { resize:vertical; min-height:75px; line-height:1.6; }
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+
+/* ── PHOTO GRID ── */
+.pgrid { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:12px; }
+.pslot {
+  aspect-ratio:1; border-radius:13px; border:2px dashed var(--border2);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; background:var(--bg4); transition:all .2s; overflow:hidden;
+  position:relative;
+}
+.pslot:active { border-color:var(--blue); }
+.pslot.filled { border:2px solid var(--green); }
+.pslot img { width:100%; height:100%; object-fit:cover; }
+.pslot .pi { font-size:22px; }
+.pslot .pl { font-size:10px; color:var(--text2); margin-top:5px; text-align:center; padding:0 4px; line-height:1.4; }
+.pslot .pbadge { position:absolute; top:5px; left:5px; background:var(--green); border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:11px; }
+.pslot-wide { grid-column:span 2; aspect-ratio:2.5/1; }
+#camInput { display:none; }
+
+/* ── PROGRESS ── */
+.prog-wrap { background:var(--bg5); border-radius:20px; height:5px; overflow:hidden; }
+.prog-bar { height:100%; border-radius:20px; background:linear-gradient(90deg,var(--blue),var(--cyan)); transition:width .4s; }
+
+/* ── REPORT CHIPS ── */
+.chips { display:flex; flex-wrap:wrap; gap:7px; }
+.chip {
+  padding:6px 13px; border-radius:20px; border:1px solid var(--border2);
+  background:var(--bg4); font-size:12px; cursor:pointer; transition:all .2s;
+  font-family:'Cairo',sans-serif; font-weight:600; color:var(--text2);
+}
+.chip.on { background:rgba(37,99,235,.2); border-color:var(--blue-light); color:var(--blue-light); }
+
+/* ── INVOICE ── */
+.inv-header {
+  background:linear-gradient(135deg, #1D4ED8 0%, #1E3A8A 100%);
+  border-radius:16px; padding:18px; margin-bottom:12px;
+  text-align:center; position:relative; overflow:hidden;
+}
+.inv-header::before {
+  content:'💧'; position:absolute; top:-10px; right:-10px;
+  font-size:80px; opacity:.08;
+}
+.inv-co { font-size:17px; font-weight:900; }
+.inv-co-ph { font-size:12px; opacity:.75; margin-top:3px; }
+.inv-num { font-size:10px; opacity:.6; margin-top:4px; }
+
+/* ── PARTS ── */
+.parts-wrap { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.part-row {
+  background:var(--bg4); border-radius:11px; padding:10px 11px;
+  border:1px solid var(--border); display:flex; align-items:center; gap:8px;
+}
+.part-sel { flex:1; background:transparent; border:none; color:var(--text); font-family:'Cairo',sans-serif; font-size:12px; outline:none; }
+.part-sel option { background:var(--bg2); }
+.part-price { font-size:13px; font-weight:800; color:var(--cyan); min-width:58px; text-align:left; direction:ltr; }
+.part-del { color:var(--red); font-size:20px; cursor:pointer; line-height:1; flex-shrink:0; }
+.add-part {
+  border:1px dashed rgba(37,99,235,.4); background:rgba(37,99,235,.04);
+  color:var(--blue-light); border-radius:11px; padding:11px; text-align:center;
+  cursor:pointer; font-size:13px; font-weight:700; transition:all .2s;
+  font-family:'Cairo',sans-serif;
+}
+.add-part:active { background:rgba(37,99,235,.1); }
+
+/* ── TOTALS ── */
+.totals { background:var(--bg4); border-radius:13px; padding:14px; border:1px solid rgba(6,182,212,.15); }
+.tot-row { display:flex; justify-content:space-between; padding:5px 0; font-size:13px; }
+.tot-row .tl { color:var(--text2); }
+.tot-row .tv { font-weight:700; }
+.tot-divider { height:1px; background:var(--border2); margin:8px 0; }
+.tot-final { display:flex; justify-content:space-between; align-items:center; }
+.tot-final .tl { font-size:15px; font-weight:800; }
+.tot-final .tv { font-size:20px; font-weight:900; color:var(--cyan); }
+
+/* ── BUTTONS ── */
+.btn {
+  width:100%; padding:14px; border-radius:13px; border:none;
+  font-family:'Cairo',sans-serif; font-size:14px; font-weight:800;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  gap:7px; transition:all .15s; margin-bottom:9px;
+}
+.btn:active { transform:scale(.98); opacity:.9; }
+.btn-blue { background:var(--blue); color:#fff; }
+.btn-green { background:var(--green); color:#fff; }
+.btn-wa { background:#25D166; color:#fff; }
+.btn-outline { background:var(--bg3); color:var(--text); border:1px solid var(--border2); }
+.btn-red { background:rgba(239,68,68,.15); color:var(--red); border:1px solid var(--red-glow); }
+.btn-sm { padding:10px; font-size:12px; border-radius:10px; }
+
+/* ── MODAL ── */
+.modal-backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,.75);
+  z-index:200; display:none; align-items:flex-end;
+  backdrop-filter:blur(6px);
+}
+.modal-backdrop.open { display:flex; }
+.modal {
+  background:var(--bg2); border-radius:22px 22px 0 0;
+  border-top:1px solid var(--border2);
+  padding:18px 16px 30px; width:100%; max-height:88vh;
+  overflow-y:auto; animation:up .3s cubic-bezier(.2,0,0,1);
+}
+@keyframes up { from { transform:translateY(100%); } to { transform:translateY(0); } }
+.modal-handle { width:38px; height:4px; background:var(--border2); border-radius:2px; margin:0 auto 14px; }
+.modal-title { font-size:16px; font-weight:800; margin-bottom:14px; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; top:72px; left:50%; transform:translateX(-50%);
+  background:var(--bg3); border:1px solid var(--border2);
+  border-radius:12px; padding:10px 18px; font-size:12px; font-weight:700;
+  z-index:300; pointer-events:none; opacity:0; transition:opacity .2s;
+  white-space:nowrap; box-shadow:0 8px 30px rgba(0,0,0,.5);
+}
+.toast.show { opacity:1; }
+
+/* ── EMPTY ── */
+.empty { text-align:center; padding:38px 20px; }
+.empty .ei { font-size:48px; margin-bottom:10px; }
+.empty .et { font-size:15px; font-weight:700; margin-bottom:5px; }
+.empty .es { font-size:12px; color:var(--text2); line-height:1.6; }
+
+/* ── SECTION DIVIDER ── */
+.sdiv { height:1px; background:var(--border); margin:14px 0; }
+
+/* ── INFO BADGE ── */
+.ibadge { display:inline-flex; align-items:center; gap:5px; background:var(--bg4); border-radius:7px; padding:4px 9px; font-size:11px; color:var(--text2); border:1px solid var(--border); margin-bottom:6px; }
+
+/* ── STEP INDICATOR ── */
+.steps { display:flex; gap:5px; margin-bottom:14px; }
+.step-dot { flex:1; height:3px; border-radius:2px; background:var(--bg4); transition:background .3s; }
+.step-dot.on { background:var(--blue); }
+.step-dot.done { background:var(--green); }
+
+/* ── FAB ── */
+.fab {
+  position:fixed; bottom:80px; left:16px;
+  width:52px; height:52px; border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),#1D4ED8);
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; cursor:pointer; box-shadow:0 4px 20px rgba(37,99,235,.5);
+  border:none; z-index:90; transition:transform .2s;
+}
+.fab:active { transform:scale(.92); }
+
+/* scrollbar */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* PRINT: Only show invoice */
+@media print {
+  body:not(.printing-invoice) * { display: none !important; }
+  body.printing-invoice .screen:not(#s-invoice) { display: none !important; }
+  body.printing-invoice #s-invoice { display: block !important; position: static !important; height: auto !important; overflow: visible !important; }
+  body.printing-invoice #s-invoice .topbar { display: none !important; }
+  body.printing-invoice #s-invoice .scroll { overflow: visible !important; padding-bottom: 0 !important; }
+  body.printing-invoice .bottom-nav { display: none !important; }
+  body.printing-invoice .btn-wa, body.printing-invoice .btn-blue { display: none !important; }
+  body { background: white !important; color: black !important; }
+}
+
+/* ANIMATIONS */
+.fade-in { animation:fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══════════ TOAST ═══════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════
+     SCREEN 1: HOME / CUSTOMERS LIST
+═══════════════════════════════════ -->
+<div class="screen active" id="s-home">
+  <div class="topbar">
+    <div class="tb-btn" onclick="openSettings()">⚙️</div>
+    <div class="tb-title">🔧 صيانة فلاتر المياه</div>
+    <div class="tb-btn" id="tb-date" style="font-size:10px;font-weight:700;color:var(--text2);width:auto;padding:0 8px;"></div>
+  </div>
+  <div class="scroll">
+    <div class="stat-grid">
+      <div class="stat-box s-wait">
+        <div class="stat-num" id="cnt-wait">0</div>
+        <div class="stat-lbl">⏳ قيد الانتظار</div>
+      </div>
+      <div class="stat-box s-done">
+        <div class="stat-num" id="cnt-done">0</div>
+        <div class="stat-lbl">✅ تمت الصيانة</div>
+      </div>
+    </div>
+    <div class="tabs" id="filter-tabs">
+      <div class="tab on" data-f="all"  onclick="setFilter('all',this)">الكل</div>
+      <div class="tab"    data-f="wait" onclick="setFilter('wait',this)">⏳ الانتظار</div>
+      <div class="tab"    data-f="done" onclick="setFilter('done',this)">✅ تمت</div>
+    </div>
+    <div id="cust-list"></div>
+  </div>
+  <button class="fab" onclick="nav('s-ocr')" title="رفع جدول جديد">📷</button>
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="nav('s-home',this)"><span class="ni">🏠</span><span class="nl">الرئيسية</span></button>
+    <button class="nav-btn"        onclick="nav('s-ocr',this)"><span class="ni">📷</span><span class="nl">رفع جدول</span></button>
+    <button class="nav-btn"        onclick="nav('s-history',this)"><span class="ni">📋</span><span class="nl">السجل</span></button>
+    <button class="nav-btn"        onclick="nav('s-parts',this)"><span class="ni">🔩</span><span class="nl">قطع الغيار</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SCREEN 2: OCR / UPLOAD TABLE IMAGE
+═══════════════════════════════════ -->
+<div class="screen" id="s-ocr">
+  <div class="topbar">
+    <div class="tb-btn" onclick="nav('s-home')">←</div>
+    <div class="tb-title">📷 رفع جدول العملاء</div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="scroll">
+    <div class="card card-pad fade-in">
+      <div class="card-head">💡 كيف يعمل؟</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.8">
+        ارفع صورة الجدول الذي يرسله المكتب على واتساب. 
+        سيقرأ الذكاء الاصطناعي البيانات تلقائياً ويُنشئ بطاقة لكل عميل تحتوي على:
+        الاسم، الهاتف، العنوان، ملاحظة الصيانة.
+      </p>
+    </div>
+
+    <div class="upload-zone" onclick="document.getElementById('imgInput').click()">
+      <div class="uz-icon">📋</div>
+      <div class="uz-title">اضغط لرفع صورة الجدول</div>
+      <div class="uz-sub">صورة الجدول الذي يرسله المكتب<br>JPG أو PNG</div>
+    </div>
+    <input type="file" id="imgInput" accept="image/*" onchange="doOCR(event)">
+
+    <div id="ocr-area"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn"        onclick="nav('s-home',this)"><span class="ni">🏠</span><span class="nl">الرئيسية</span></button>
+    <button class="nav-btn active" onclick="nav('s-ocr',this)"><span class="ni">📷</span><span class="nl">رفع جدول</span></button>
+    <button class="nav-btn"        onclick="nav('s-history',this)"><span class="ni">📋</span><span class="nl">السجل</span></button>
+    <button class="nav-btn"        onclick="nav('s-parts',this)"><span class="ni">🔩</span><span class="nl">قطع الغيار</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SCREEN 3: MAINTENANCE WORKFLOW
+═══════════════════════════════════ -->
+<div class="screen" id="s-maintain">
+  <div class="topbar">
+    <div class="tb-btn" onclick="nav('s-home')">←</div>
+    <div class="tb-title" id="mt-title">🛠️ تنفيذ الصيانة</div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="scroll">
+    <!-- Customer summary -->
+    <div id="mt-cust-info"></div>
+
+    <!-- Steps -->
+    <div class="steps" id="mt-steps">
+      <div class="step-dot on"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <!-- STEP 1: Photos -->
+    <div id="mt-step1">
+      <div class="card card-pad">
+        <div class="card-head">📸 خطوة 1 — صور التوثيق (5 صور مطلوبة)</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text2)" id="photos-count">0 / 5</span>
+          <div class="prog-wrap" style="flex:1;margin-right:10px"><div class="prog-bar" id="photos-prog" style="width:0%"></div></div>
+        </div>
+        <div class="pgrid">
+          <div class="pslot" id="ps0" onclick="takePhoto(0)"><div class="pi">📷</div><div class="pl">قبل الصيانة</div></div>
+          <div class="pslot" id="ps1" onclick="takePhoto(1)"><div class="pi">🔩</div><div class="pl">قطعة الغيار الجديدة</div></div>
+          <div class="pslot" id="ps2" onclick="takePhoto(2)"><div class="pi">💧</div><div class="pl">مستوى الأملاح</div></div>
+          <div class="pslot" id="ps3" onclick="takePhoto(3)"><div class="pi">🗑️</div><div class="pl">القطعة القديمة</div></div>
+          <div class="pslot pslot-wide" id="ps4" onclick="takePhoto(4)"><div class="pi">✨</div><div class="pl">الجهاز بعد الصيانة</div></div>
+        </div>
+        <input type="file" accept="image/*" capture="environment" id="camInput" onchange="gotPhoto(event)">
+        <button class="btn btn-blue" onclick="goStep(2)" id="btn-step2" disabled>التالي: التقرير الفني ←</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Report -->
+    <div id="mt-step2" style="display:none">
+      <div class="card card-pad">
+        <div class="card-head">📋 خطوة 2 — التقرير الفني</div>
+        <div class="fg">
+          <label class="flbl">حالة الشمعات</label>
+          <div class="chips" id="chips-candles">
+            <div class="chip" onclick="toggleChip(this,'candles')">جيدة ✅</div>
+            <div class="chip" onclick="toggleChip(this,'candles')">متوسطة ⚠️</div>
+            <div class="chip" onclick="toggleChip(this,'candles')">سيئة ❌</div>
+            <div class="chip" onclick="toggleChip(this,'candles')">تالفة 🔴</div>
+            <div class="chip" onclick="toggleChip(this,'candles')">تم التغيير ✨</div>
+          </div>
+        </div>
+        <div class="sdiv"></div>
+        <div class="fg">
+          <label class="flbl">حالة الجهاز العامة</label>
+          <div class="chips" id="chips-device">
+            <div class="chip" onclick="toggleChip(this,'device')">يعمل بكفاءة ✅</div>
+            <div class="chip" onclick="toggleChip(this,'device')">ضغط منخفض ⬇️</div>
+            <div class="chip" onclick="toggleChip(this,'device')">تسريب بسيط 💧</div>
+            <div class="chip" onclick="toggleChip(this,'device')">موتور ضعيف ⚡</div>
+            <div class="chip" onclick="toggleChip(this,'device')">صيانة شاملة 🔧</div>
+            <div class="chip" onclick="toggleChip(this,'device')">يحتاج متابعة 👁️</div>
+          </div>
+        </div>
+        <div class="sdiv"></div>
+        <div class="fg">
+          <label class="flbl">ملاحظات فنية إضافية</label>
+          <textarea class="ftxt" id="mt-notes" placeholder="اكتب أي تفاصيل إضافية عن حالة الجهاز..."></textarea>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="goStep(1)" style="flex:1">← رجوع</button>
+          <button class="btn btn-blue btn-sm" onclick="goStep(3)" style="flex:2">التالي: الفاتورة ←</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Confirm -->
+    <div id="mt-step3" style="display:none">
+      <div class="card card-pad">
+        <div class="card-head">✅ خطوة 3 — تأكيد وإنشاء الفاتورة</div>
+        <div id="mt-summary"></div>
+        <div class="sdiv"></div>
+        <button class="btn btn-green" onclick="completeMaintenance()">✅ إتمام الصيانة وإنشاء الفاتورة</button>
+        <button class="btn btn-outline btn-sm" onclick="goStep(2)">← رجوع للتقرير</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SCREEN 4: INVOICE
+═══════════════════════════════════ -->
+<div class="screen" id="s-invoice">
+  <div class="topbar">
+    <div class="tb-btn" onclick="nav('s-maintain')">←</div>
+    <div class="tb-title">💰 الفاتورة الإلكترونية</div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="scroll">
+    <div class="inv-header">
+      <div style="font-size:28px;margin-bottom:6px">🏢</div>
+      <div class="inv-co" id="inv-co-name">مكتب صيانة فلاتر المياه</div>
+      <div class="inv-co-ph" id="inv-co-ph">📞 0500000000</div>
+      <div class="inv-num" id="inv-num">#INV-001</div>
+    </div>
+
+    <!-- Client Info -->
+    <div class="card card-pad">
+      <div class="card-head">👤 بيانات العميل</div>
+      <div class="row2">
+        <div class="fg">
+          <label class="flbl">اسم العميل</label>
+          <input class="finp" id="inv-name" readonly>
+        </div>
+        <div class="fg">
+          <label class="flbl">التاريخ</label>
+          <input class="finp" id="inv-date" readonly style="font-size:11px">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="fg">
+          <label class="flbl">اسم الفني</label>
+          <input class="finp" id="inv-tech" placeholder="اسم الفني">
+        </div>
+        <div class="fg">
+          <label class="flbl">مقياس الأملاح (PPM)</label>
+          <input class="finp" id="inv-salt" type="number" placeholder="مثال: 350">
+        </div>
+      </div>
+    </div>
+
+    <!-- Parts -->
+    <div class="card card-pad">
+      <div class="card-head">🔩 قطع الغيار</div>
+      <div class="parts-wrap" id="parts-wrap"></div>
+      <div class="add-part" onclick="addPart()" id="add-part-btn">＋ إضافة قطعة غيار</div>
+    </div>
+
+    <!-- Extra Fees -->
+    <div class="card card-pad">
+      <div class="card-head">💳 رسوم إضافية</div>
+      <div class="row2">
+        <div class="fg">
+          <label class="flbl">ثمن التركيب</label>
+          <input class="finp" id="inv-install" type="number" placeholder="0" oninput="calcTotal()">
+        </div>
+        <div class="fg">
+          <label class="flbl">رسوم الزيارة</label>
+          <input class="finp" id="inv-visit" type="number" placeholder="0" oninput="calcTotal()">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="flbl">خصم (اختياري)</label>
+        <input class="finp" id="inv-disc" type="number" placeholder="0" oninput="calcTotal()">
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="card card-pad">
+      <div class="card-head">🧮 الإجمالي</div>
+      <div class="totals">
+        <div class="tot-row"><span class="tl">قطع الغيار</span><span class="tv" id="t-parts">0 ر.س</span></div>
+        <div class="tot-row"><span class="tl">التركيب</span><span class="tv" id="t-install">0 ر.س</span></div>
+        <div class="tot-row"><span class="tl">الزيارة</span><span class="tv" id="t-visit">0 ر.س</span></div>
+        <div class="tot-row"><span class="tl">الخصم</span><span class="tv" id="t-disc" style="color:var(--red)">0 ر.س</span></div>
+        <div class="tot-divider"></div>
+        <div class="tot-final">
+          <span class="tl">الإجمالي</span>
+          <span class="tv" id="t-total">0 ر.س</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send -->
+    <div style="margin-top:4px">
+      <button class="btn btn-wa" onclick="sendInvoiceWA('client')">
+        <span>💬</span> إرسال للعميل عبر واتساب
+      </button>
+      <button class="btn btn-wa btn-sm" onclick="sendInvoiceWA('group')" style="background:rgba(37,209,102,.15);color:#25D166;border:1px solid rgba(37,209,102,.3)">
+        <span>👥</span> إرسال لجروب المكتب
+      </button>
+      <button class="btn btn-blue" onclick="generatePDF()">
+        <span>📄</span> حفظ كصورة / PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SCREEN 5: HISTORY
+═══════════════════════════════════ -->
+<div class="screen" id="s-history">
+  <div class="topbar">
+    <div style="width:36px"></div>
+    <div class="tb-title">📋 سجل الصيانة</div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="scroll">
+    <div id="history-list"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn"        onclick="nav('s-home',this)"><span class="ni">🏠</span><span class="nl">الرئيسية</span></button>
+    <button class="nav-btn"        onclick="nav('s-ocr',this)"><span class="ni">📷</span><span class="nl">رفع جدول</span></button>
+    <button class="nav-btn active" onclick="nav('s-history',this)"><span class="ni">📋</span><span class="nl">السجل</span></button>
+    <button class="nav-btn"        onclick="nav('s-parts',this)"><span class="ni">🔩</span><span class="nl">قطع الغيار</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SCREEN 6: PARTS MANAGEMENT
+═══════════════════════════════════ -->
+<div class="screen" id="s-parts">
+  <div class="topbar">
+    <div class="tb-btn" onclick="openSettings()">⚙️</div>
+    <div class="tb-title">🔩 إدارة قطع الغيار</div>
+    <div class="tb-btn" onclick="openAddPart()" style="background:var(--blue);border-color:var(--blue);color:#fff;font-size:20px">＋</div>
+  </div>
+  <div class="scroll">
+    <div class="card card-pad" style="margin-bottom:12px;border-color:rgba(6,182,212,.2)">
+      <div style="font-size:12px;color:var(--text2);line-height:1.7">
+        💡 اضغط على أي قطعة لتعديل اسمها أو سعرها. التغييرات تنعكس فوراً على الفاتورة.
+      </div>
+    </div>
+    <div id="parts-mgmt-list"></div>
+    <button class="btn btn-blue" onclick="openAddPart()" style="margin-top:4px">＋ إضافة قطعة جديدة</button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn"        onclick="nav('s-home',this)"><span class="ni">🏠</span><span class="nl">الرئيسية</span></button>
+    <button class="nav-btn"        onclick="nav('s-ocr',this)"><span class="ni">📷</span><span class="nl">رفع جدول</span></button>
+    <button class="nav-btn"        onclick="nav('s-history',this)"><span class="ni">📋</span><span class="nl">السجل</span></button>
+    <button class="nav-btn active" onclick="nav('s-parts',this)"><span class="ni">🔩</span><span class="nl">قطع الغيار</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MODAL: CUSTOMER DETAIL
+═══════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-cust">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-cust-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MODAL: SETTINGS
+═══════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-settings">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙️ إعدادات التطبيق</div>
+    <div class="fg">
+      <label class="flbl">اسم المكتب</label>
+      <input class="finp" id="set-office" placeholder="مكتب صيانة فلاتر المياه">
+    </div>
+    <div class="fg">
+      <label class="flbl">رقم هاتف المكتب</label>
+      <input class="finp" id="set-office-ph" type="tel" placeholder="05xxxxxxxx">
+    </div>
+    <div class="fg">
+      <label class="flbl">رقم جروب واتساب المكتب</label>
+      <input class="finp" id="set-group-ph" type="tel" placeholder="رقم الجروب">
+    </div>
+    <div class="fg">
+      <label class="flbl">اسمك (الفني)</label>
+      <input class="finp" id="set-tech" placeholder="اسم الفني">
+    </div>
+    <div class="sdiv"></div>
+    <button class="btn btn-blue" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-settings')">إلغاء</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MODAL: EDIT / ADD PART
+═══════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-part">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="part-modal-title">✏️ تعديل قطعة الغيار</div>
+    <input type="hidden" id="part-edit-idx" value="-1">
+    <div class="fg">
+      <label class="flbl">اسم القطعة</label>
+      <input class="finp" id="part-edit-name" placeholder="مثال: فلتر رقم 1">
+    </div>
+    <div class="fg">
+      <label class="flbl">السعر (ر.س)</label>
+      <input class="finp" id="part-edit-price" type="number" placeholder="0" min="0">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-blue" onclick="savePart()" style="flex:2">💾 حفظ</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-part')" style="flex:1">إلغاء</button>
+    </div>
+    <button class="btn btn-red btn-sm" id="part-delete-btn" onclick="deletePart()" style="margin-top:6px">🗑️ حذف هذه القطعة</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MODAL: ADD CUSTOMER MANUALLY
+═══════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-add">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">➕ إضافة عميل يدوياً</div>
+    <div class="fg"><label class="flbl">اسم العميل</label><input class="finp" id="add-name" placeholder="محمد عبدالله"></div>
+    <div class="fg"><label class="flbl">رقم الجوال</label><input class="finp" id="add-phone" type="tel" placeholder="01xxxxxxxxx"></div>
+    <div class="fg"><label class="flbl">العنوان</label><input class="finp" id="add-addr" placeholder="الحي، الشارع"></div>
+    <div class="fg"><label class="flbl">ملاحظة الصيانة</label><textarea class="ftxt" id="add-note" placeholder="تفاصيل الصيانة المطلوبة..."></textarea></div>
+    <button class="btn btn-blue" onclick="addManual()">✅ إضافة العميل</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-add')">إلغاء</button>
+  </div>
+</div>
+
+<script type="module">
+// ════════════════════════════════════
+//  FIREBASE SETUP
+// ════════════════════════════════════
+import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc,
+         deleteDoc, onSnapshot, getDoc }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyC3FT9pBLg2dOyAUGfyA1uwEd3KYZkiGks",
+  authDomain:        "filter-app-3009d.firebaseapp.com",
+  projectId:         "filter-app-3009d",
+  storageBucket:     "filter-app-3009d.firebasestorage.app",
+  messagingSenderId: "56391931264",
+  appId:             "1:56391931264:web:98439082f3b44b5c219d65"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
+
+// ════════════════════════════════════
+//  STATE
+// ════════════════════════════════════
+let customers = [];
+let settings  = JSON.parse(localStorage.getItem('settings') || '{"office":"مكتب صيانة فلاتر المياه","officePh":"0500000000","groupPh":"","tech":""}');
+let currentFilter = 'all';
+let currentCustId = null;
+let photosTaken = [null,null,null,null,null];
+let invoiceCounter = parseInt(localStorage.getItem('invCounter') || '1');
+
+// ════════════════════════════════════
+//  FIREBASE REALTIME LISTENER
+// ════════════════════════════════════
+onSnapshot(collection(db, 'customers'), (snap) => {
+  customers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderHome();
+  renderHistory();
+});
+
+// ════════════════════════════════════
+//  FIREBASE SAVE / DELETE
+// ════════════════════════════════════
+async function saveOne(c) {
+  await setDoc(doc(db, 'customers', c.id), c);
+}
+
+async function deleteOne(id) {
+  await deleteDoc(doc(db, 'customers', id));
+}
+
+const DEFAULT_PARTS = [
+  {name:'فلتر رقم 1 (sediment)',    price:25},
+  {name:'فلتر رقم 2 (carbon block)', price:30},
+  {name:'فلتر رقم 3 (carbon block)', price:30},
+  {name:'غشاء RO 50 جالون',          price:150},
+  {name:'غشاء RO 75 جالون',          price:180},
+  {name:'فلتر ما بعد الكربون',        price:25},
+  {name:'موتور RO',                   price:220},
+  {name:'خزان 3.2 جالون',            price:90},
+  {name:'صنبور RO',                  price:35},
+  {name:'بكسة المياه',               price:15},
+  {name:'شلنج (متر)',                price:5},
+  {name:'أوتوماتيك قطع المياه',      price:40},
+  {name:'فلتر تحت الحوض (1 مرحلة)', price:60},
+  {name:'مرشح الكلور (pitcher)',     price:45},
+  {name:'مادة التعقيم',               price:20},
+];
+let PARTS = JSON.parse(localStorage.getItem('parts') || JSON.stringify(DEFAULT_PARTS));
+function saveParts() { localStorage.setItem('parts', JSON.stringify(PARTS)); }
+
+// ════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════
+function nav(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  if (id === 's-home') renderHome();
+  if (id === 's-history') renderHistory();
+  if (id === 's-parts') renderPartsMgmt();
+}
+
+// ════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ════════════════════════════════════
+//  HOME RENDER
+// ════════════════════════════════════
+function renderHome() {
+  const wait = customers.filter(c => c.status === 'wait');
+  const done = customers.filter(c => c.status === 'done');
+  document.getElementById('cnt-wait').textContent = wait.length;
+  document.getElementById('cnt-done').textContent = done.length;
+
+  // Date
+  const now = new Date();
+  document.getElementById('tb-date').textContent = now.toLocaleDateString('ar-EG',{month:'short',day:'numeric'});
+
+  let list = customers;
+  if (currentFilter === 'wait') list = wait;
+  if (currentFilter === 'done') list = done;
+
+  const el = document.getElementById('cust-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty fade-in">
+      <div class="ei">📋</div>
+      <div class="et">لا يوجد عملاء ${currentFilter==='wait'?'قيد الانتظار':currentFilter==='done'?'منتهية الصيانة':'بعد'}</div>
+      <div class="es">ارفع صورة جدول المكتب أو أضف عميلاً يدوياً</div>
+      <br>
+      <button class="btn btn-blue btn-sm" style="width:auto;padding:10px 20px" onclick="nav('s-ocr')">📷 رفع جدول</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(c => `
+    <div class="cust-card fade-in" onclick="openCust('${c.id}')">
+      <div class="cust-stripe ${c.status}"></div>
+      <div class="cust-body">
+        <div class="cust-row1">
+          <div class="cust-name">${c.name}</div>
+          <div class="status-pill ${c.status}">${c.status==='wait'?'⏳ انتظار':'✅ تمت'}</div>
+        </div>
+        <div class="cust-addr">📍 ${c.address || 'العنوان غير محدد'}</div>
+        ${c.note ? `<div class="cust-note">📝 ${c.note}</div>` : ''}
+        <div class="cust-btns">
+          <div class="cab cab-call" onclick="callClient(event,'${c.phone}')">📞 اتصال</div>
+          <div class="cab cab-map"  onclick="openMap(event,'${encodeURIComponent(c.address||'')}')">📍 خريطة</div>
+          ${c.status==='wait' ? `<div class="cab cab-work" onclick="startMaintain(event,'${c.id}')">🛠️ صيانة</div>` : `<div class="cab cab-view" onclick="viewInvoice(event,'${c.id}')">🧾 فاتورة</div>`}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  renderHome();
+}
+
+// ════════════════════════════════════
+//  CUSTOMER ACTIONS
+// ════════════════════════════════════
+function callClient(e, phone) {
+  e.stopPropagation();
+  if (!phone) return toast('⚠️ رقم الهاتف غير متوفر');
+  window.location.href = 'tel:' + phone;
+}
+
+function openMap(e, addr) {
+  e.stopPropagation();
+  if (!addr) return toast('⚠️ العنوان غير متوفر');
+  window.open('https://www.google.com/maps/search/?api=1&query=' + addr, '_blank');
+}
+
+function startMaintain(e, id) {
+  e.stopPropagation();
+  currentCustId = id;
+  photosTaken = [null,null,null,null,null];
+  const c = customers.find(x => x.id === id);
+  document.getElementById('mt-title').textContent = `🛠️ ${c.name}`;
+
+  // Customer info card
+  document.getElementById('mt-cust-info').innerHTML = `
+    <div class="card card-pad fade-in" style="border-color:rgba(245,158,11,.2)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:16px;font-weight:800">${c.name}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px">📍 ${c.address||''}</div>
+          ${c.note?`<div style="font-size:11px;color:var(--orange);margin-top:3px">📝 ${c.note}</div>`:''}
+        </div>
+        <div class="cab cab-call" onclick="callClient(event,'${c.phone}')" style="width:auto;padding:8px 14px;flex:none">📞 ${c.phone}</div>
+      </div>
+    </div>`;
+
+  // Reset steps
+  goStep(1);
+  nav('s-maintain');
+}
+
+function openCust(id) {
+  const c = customers.find(x => x.id === id);
+  document.getElementById('modal-cust-body').innerHTML = `
+    <div class="modal-title">👤 ${c.name}</div>
+    <div class="ibadge">📞 ${c.phone||'—'}</div>
+    <div class="ibadge" style="margin-right:6px">📍 ${c.address||'—'}</div>
+    ${c.note?`<div class="card card-pad" style="margin-top:10px"><div class="card-head">📝 ملاحظة الصيانة</div><p style="font-size:13px;line-height:1.7">${c.note}</p></div>`:''}
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-green btn-sm" onclick="callClient(event,'${c.phone}');closeModal('modal-cust')">📞 اتصال على ${c.phone}</button>
+      <button class="btn btn-blue btn-sm"  onclick="openMap(event,'${encodeURIComponent(c.address||'')}');closeModal('modal-cust')">📍 فتح في الخريطة</button>
+      ${c.status==='wait'?`<button class="btn btn-outline btn-sm" onclick="startMaintain(event,'${c.id}');closeModal('modal-cust')">🛠️ بدء الصيانة</button>`:''}
+      <button class="btn btn-red btn-sm" onclick="deleteCustomer('${c.id}')">🗑️ حذف العميل</button>
+    </div>`;
+  openModal('modal-cust');
+}
+
+async function deleteCustomer(id) {
+  await deleteOne(id);
+  closeModal('modal-cust');
+  toast('🗑️ تم الحذف');
+  // Firebase onSnapshot listener will automatically update customers & re-render
+}
+
+// ════════════════════════════════════
+//  OCR with Google Gemini AI
+// ════════════════════════════════════
+const GEMINI_KEY = 'AIzaSyDukVcl9qeBODhI1BnLvshPL75pUfZqvUY';
+
+async function doOCR(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const base64 = ev.target.result.split(',')[1];
+    const imgSrc  = ev.target.result;
+    const mimeType = file.type || 'image/jpeg';
+
+    document.getElementById('ocr-area').innerHTML = `
+      <div class="ocr-box fade-in">
+        <img src="${imgSrc}" class="ocr-img">
+        <div class="ocr-loader">
+          <div class="spin">🔄</div>
+          <div class="ocr-txt">جاري تحليل الجدول بالذكاء الاصطناعي...</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:6px">Gemini يقرأ بيانات العملاء تلقائياً</div>
+        </div>
+      </div>`;
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  inline_data: { mime_type: mimeType, data: base64 }
+                },
+                {
+                  text: `هذا جدول صيانة فلاتر مياه. استخرج بيانات كل عميل من الصورة.
+أعد الجواب فقط بـ JSON بدون أي نص آخر ولا علامات backtick، بالشكل التالي:
+{"customers":[{"name":"اسم العميل","phone":"رقم الجوال","address":"العنوان","note":"ملاحظة الصيانة"}]}
+إذا كان أي حقل غير واضح اكتب سلسلة فارغة "".
+استخرج جميع العملاء الموجودين في الجدول.`
+                }
+              ]
+            }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 2000 }
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      // Check for API error
+      if (data.error) throw new Error(data.error.message);
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      let parsed;
+      try {
+        const clean = text.replace(/```json|```/g,'').trim();
+        parsed = JSON.parse(clean);
+      } catch {
+        parsed = {customers:[]};
+      }
+
+      const custs = parsed.customers || [];
+      if (!custs.length) {
+        document.getElementById('ocr-area').innerHTML = `
+          <div class="card card-pad fade-in" style="border-color:var(--red-glow)">
+            <div style="text-align:center;padding:14px">
+              <div style="font-size:32px">⚠️</div>
+              <div style="font-weight:700;margin-top:8px">لم أتمكن من قراءة الجدول</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:6px">تأكد أن الصورة واضحة وتحتوي جدول العملاء</div>
+            </div>
+          </div>
+          <button class="btn btn-outline" onclick="openAddModal()">➕ إضافة عميل يدوياً</button>`;
+        return;
+      }
+
+      // Show extracted results
+      document.getElementById('ocr-area').innerHTML = `
+        <div class="ocr-box fade-in">
+          <img src="${imgSrc}" class="ocr-img">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:800;color:var(--green)">✅ تم استخراج ${custs.length} عملاء</div>
+          </div>
+          <div class="ocr-parsed">
+            ${custs.map((c,i)=>`
+              <div class="ocr-row" style="flex-direction:column;gap:4px;padding:9px 0;${i>0?'border-top:1px solid var(--border)':''}">
+                <div style="font-size:13px;font-weight:800">${i+1}. ${c.name||'غير واضح'}</div>
+                ${c.phone?`<div style="font-size:12px;color:var(--green)">📞 ${c.phone}</div>`:''}
+                ${c.address?`<div style="font-size:12px;color:var(--text2)">📍 ${c.address}</div>`:''}
+                ${c.note?`<div style="font-size:11px;color:var(--orange)">📝 ${c.note}</div>`:''}
+              </div>`).join('')}
+          </div>
+        </div>
+        <button class="btn btn-green fade-in" onclick="importCustomers(${JSON.stringify(custs).replace(/'/g,'&#39;')})">
+          ✅ إضافة ${custs.length} عملاء للتطبيق
+        </button>
+        <button class="btn btn-outline" onclick="document.getElementById('imgInput').click()">📷 رفع صورة أخرى</button>`;
+
+    } catch(err) {
+      document.getElementById('ocr-area').innerHTML = `
+        <div class="card card-pad" style="border-color:var(--red-glow)">
+          <div style="text-align:center;padding:10px">
+            <div style="font-size:28px">❌</div>
+            <div style="font-weight:700;margin-top:8px">خطأ في الاتصال</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:5px">${err.message}</div>
+          </div>
+        </div>
+        <button class="btn btn-blue" onclick="document.getElementById('imgInput').click()">🔄 حاول مجدداً</button>
+        <button class="btn btn-outline" onclick="openAddModal()">➕ إضافة يدوياً</button>`;
+    }
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+async function importCustomers(custs) {
+  const base = Date.now();
+  const added = custs.filter(c => c.name).map((c, i) => ({
+    id: 'c' + (base + i) + Math.random().toString(36).slice(2,6),
+    name: c.name, phone: c.phone, address: c.address,
+    note: c.note, status:'wait',
+    createdAt: new Date().toISOString()
+  }));
+  for (const c of added) { await saveOne(c); }
+  toast(`✅ تم إضافة ${added.length} عملاء`);
+  nav('s-home');
+}
+
+// ════════════════════════════════════
+//  MAINTENANCE STEPS
+// ════════════════════════════════════
+function goStep(n) {
+  ['mt-step1','mt-step2','mt-step3'].forEach((id,i) => {
+    document.getElementById(id).style.display = (i+1===n)?'block':'none';
+  });
+  const dots = document.querySelectorAll('#mt-steps .step-dot');
+  dots.forEach((d,i) => {
+    d.className = 'step-dot' + (i+1<n?' done':(i+1===n?' on':''));
+  });
+}
+
+let currentPhotoSlot = 0;
+function takePhoto(slot) {
+  currentPhotoSlot = slot;
+  document.getElementById('camInput').click();
+}
+
+function gotPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    photosTaken[currentPhotoSlot] = ev.target.result;
+    const slot = document.getElementById('ps'+currentPhotoSlot);
+    slot.classList.add('filled');
+    slot.innerHTML = `<img src="${ev.target.result}"><div class="pbadge">✓</div>`;
+    updatePhotoProg();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function updatePhotoProg() {
+  const cnt = photosTaken.filter(Boolean).length;
+  document.getElementById('photos-count').textContent = cnt + ' / 5';
+  document.getElementById('photos-prog').style.width = (cnt/5*100)+'%';
+  const btn = document.getElementById('btn-step2');
+  btn.disabled = cnt < 5;
+  btn.textContent = cnt<5 ? `التالي (${5-cnt} صور متبقية) ←` : 'التالي: التقرير الفني ←';
+}
+
+function toggleChip(el, group) {
+  el.classList.toggle('on');
+}
+
+function completeMaintenance() {
+  const c = customers.find(x => x.id === currentCustId);
+  // Build summary for step 3
+  const candlesSel = [...document.querySelectorAll('#chips-candles .chip.on')].map(c=>c.textContent).join('، ');
+  const deviceSel  = [...document.querySelectorAll('#chips-device .chip.on')].map(c=>c.textContent).join('، ');
+  document.getElementById('mt-summary').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="card-head">👤 ${c.name}</div>
+      <div class="ibadge">📸 ${photosTaken.filter(Boolean).length} صور موثقة</div>
+      ${candlesSel?`<div class="ibadge">🕯️ ${candlesSel}</div>`:''}
+      ${deviceSel?`<div class="ibadge">🔧 ${deviceSel}</div>`:''}
+    </div>`;
+  goStep(3);
+}
+
+async function goToInvoice() {
+  const c = customers.find(x => x.id === currentCustId);
+  if (!c) return;
+  c.status = 'done';
+  await saveOne(c); // Save to Firebase properly
+
+  // Increment invoice counter
+  invoiceCounter++;
+  localStorage.setItem('invCounter', invoiceCounter);
+
+  // Setup invoice
+  document.getElementById('inv-co-name').textContent = settings.office;
+  document.getElementById('inv-co-ph').textContent = '📞 ' + settings.officePh;
+  document.getElementById('inv-num').textContent = '#INV-' + String(invoiceCounter - 1).padStart(3,'0');
+  document.getElementById('inv-name').value = c.name;
+  const now = new Date();
+  document.getElementById('inv-date').value = now.toLocaleString('ar-EG');
+  document.getElementById('inv-tech').value = settings.tech;
+  document.getElementById('inv-install').value = '';
+  document.getElementById('inv-visit').value = '';
+  document.getElementById('inv-disc').value = '';
+
+  // Parts
+  document.getElementById('parts-wrap').innerHTML = '';
+  addPart();
+  calcTotal();
+
+  nav('s-invoice');
+}
+
+// ════════════════════════════════════
+//  INVOICE / PARTS
+// ════════════════════════════════════
+function addPart() {
+  const wrap = document.getElementById('parts-wrap');
+  const rows = wrap.querySelectorAll('.part-row').length;
+  if (rows >= 15) { toast('⚠️ الحد الأقصى 15 قطعة'); return; }
+
+  const opts = PARTS.map(p => `<option value="${p.price}">${p.name} — ${p.price} ر.س</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'part-row';
+  div.innerHTML = `
+    <select class="part-sel" onchange="partChanged(this)">
+      <option value="0">— اختر القطعة —</option>
+      ${opts}
+    </select>
+    <span class="part-price">0 ر.س</span>
+    <span class="part-del" onclick="removePart(this)">✕</span>`;
+  wrap.appendChild(div);
+
+  if (wrap.querySelectorAll('.part-row').length >= 15)
+    document.getElementById('add-part-btn').style.display = 'none';
+  calcTotal();
+}
+
+function partChanged(sel) {
+  sel.parentElement.querySelector('.part-price').textContent = sel.value + ' ر.س';
+  calcTotal();
+}
+
+function removePart(btn) {
+  btn.parentElement.remove();
+  document.getElementById('add-part-btn').style.display = 'block';
+  calcTotal();
+}
+
+function calcTotal() {
+  let partsSum = 0;
+  document.querySelectorAll('.part-sel').forEach(s => { partsSum += parseFloat(s.value)||0; });
+  const install = parseFloat(document.getElementById('inv-install')?.value)||0;
+  const visit   = parseFloat(document.getElementById('inv-visit')?.value)||0;
+  const disc    = parseFloat(document.getElementById('inv-disc')?.value)||0;
+  const total   = partsSum + install + visit - disc;
+
+  document.getElementById('t-parts').textContent   = partsSum + ' ر.س';
+  document.getElementById('t-install').textContent = install  + ' ر.س';
+  document.getElementById('t-visit').textContent   = visit    + ' ر.س';
+  document.getElementById('t-disc').textContent    = disc     + ' ر.س';
+  document.getElementById('t-total').textContent   = total    + ' ر.س';
+}
+
+function buildInvoiceText() {
+  const name    = document.getElementById('inv-name').value;
+  const dt      = document.getElementById('inv-date').value;
+  const tech    = document.getElementById('inv-tech').value;
+  const salt    = document.getElementById('inv-salt').value;
+  const install = document.getElementById('inv-install').value||0;
+  const visit   = document.getElementById('inv-visit').value||0;
+  const total   = document.getElementById('t-total').textContent;
+
+  let parts = '';
+  document.querySelectorAll('.part-row').forEach(row => {
+    const sel = row.querySelector('.part-sel');
+    const opt = sel.options[sel.selectedIndex];
+    if (sel.value > 0) parts += '\n• ' + opt.text;
+  });
+
+  return `🏢 *${settings.office}*\n📞 ${settings.officePh}\n${'─'.repeat(25)}\n` +
+    `👤 العميل: ${name}\n📅 ${dt}\n👨‍🔧 الفني: ${tech}\n💧 الأملاح: ${salt} PPM\n${'─'.repeat(25)}\n` +
+    `🔩 قطع الغيار:${parts||'\n• —'}\n` +
+    `🔧 التركيب: ${install} ر.س\n🚗 الزيارة: ${visit} ر.س\n${'─'.repeat(25)}\n` +
+    `💰 *الإجمالي: ${total}*\n\nشكراً لثقتكم 🙏`;
+}
+
+function sendInvoiceWA(target) {
+  const text = buildInvoiceText();
+  const c = customers.find(x => x.id === currentCustId);
+  let phone = target === 'client' ? (c?.phone||'') : settings.groupPh;
+  phone = phone.replace(/[^0-9]/g,'');
+  // Add country code if not already present
+  if (phone.startsWith('05') || phone.startsWith('5')) {
+    // Saudi number
+    if (phone.startsWith('0')) phone = '966' + phone.slice(1);
+    else if (phone.startsWith('5')) phone = '966' + phone;
+  } else if (phone.startsWith('01') || phone.startsWith('1')) {
+    // Egyptian number
+    if (phone.startsWith('0')) phone = '20' + phone.slice(1);
+    else if (phone.startsWith('1')) phone = '20' + phone;
+  }
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+}
+
+function generatePDF() {
+  // Add print-only class to body so only invoice is visible in print
+  document.body.classList.add('printing-invoice');
+  toast('📄 سيتم فتح نافذة الطباعة لحفظ كـ PDF');
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove('printing-invoice');
+  }, 500);
+}
+
+// ════════════════════════════════════
+//  HISTORY
+// ════════════════════════════════════
+function renderHistory() {
+  const done = customers.filter(c => c.status === 'done');
+  const el = document.getElementById('history-list');
+  if (!done.length) {
+    el.innerHTML = `<div class="empty"><div class="ei">📋</div><div class="et">لا يوجد سجل بعد</div><div class="es">ستظهر هنا الصيانات المكتملة</div></div>`;
+    return;
+  }
+  el.innerHTML = done.map(c => `
+    <div class="cust-card fade-in">
+      <div class="cust-stripe done"></div>
+      <div class="cust-body">
+        <div class="cust-row1">
+          <div class="cust-name">${c.name}</div>
+          <div class="status-pill done">✅ تمت</div>
+        </div>
+        <div class="cust-addr">📍 ${c.address||'—'}</div>
+        <div class="cust-btns">
+          <div class="cab cab-call" onclick="callClient(event,'${c.phone}')">📞 اتصال</div>
+          <div class="cab cab-map" onclick="openMap(event,'${encodeURIComponent(c.address||'')}')">📍 خريطة</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
+});
+
+function openAddModal() { openModal('modal-add'); }
+function openSettings() {
+  document.getElementById('set-office').value   = settings.office;
+  document.getElementById('set-office-ph').value = settings.officePh;
+  document.getElementById('set-group-ph').value  = settings.groupPh;
+  document.getElementById('set-tech').value      = settings.tech;
+  openModal('modal-settings');
+}
+function saveSettings() {
+  settings.office   = document.getElementById('set-office').value || settings.office;
+  settings.officePh = document.getElementById('set-office-ph').value || settings.officePh;
+  settings.groupPh  = document.getElementById('set-group-ph').value;
+  settings.tech     = document.getElementById('set-tech').value;
+  localStorage.setItem('settings', JSON.stringify(settings));
+  closeModal('modal-settings');
+  toast('✅ تم حفظ الإعدادات');
+}
+
+async function addManual() {
+  const name  = document.getElementById('add-name').value.trim();
+  if (!name) return toast('⚠️ أدخل اسم العميل');
+  const phone = document.getElementById('add-phone').value.trim();
+  const addr  = document.getElementById('add-addr').value.trim();
+  const note  = document.getElementById('add-note').value.trim();
+  const c = {
+    id:'c'+Date.now(), name, phone, address:addr, note, status:'wait',
+    createdAt:new Date().toISOString()
+  };
+  await saveOne(c);
+  closeModal('modal-add');
+  document.getElementById('add-name').value='';
+  document.getElementById('add-phone').value='';
+  document.getElementById('add-addr').value='';
+  document.getElementById('add-note').value='';
+  toast('✅ تم إضافة العميل');
+}
+
+function viewInvoice(e, id) {
+  e.stopPropagation();
+  currentCustId = id;
+  const c = customers.find(x => x.id === id);
+  document.getElementById('inv-co-name').textContent = settings.office;
+  document.getElementById('inv-co-ph').textContent = '📞 ' + settings.officePh;
+  document.getElementById('inv-name').value = c.name;
+  document.getElementById('inv-date').value = new Date().toLocaleString('ar-EG');
+  document.getElementById('inv-tech').value = settings.tech;
+  if (!document.querySelector('.part-row')) addPart();
+  calcTotal();
+  nav('s-invoice');
+}
+
+// ════════════════════════════════════
+//  PARTS MANAGEMENT
+// ════════════════════════════════════
+function renderPartsMgmt() {
+  const el = document.getElementById('parts-mgmt-list');
+  if (!PARTS.length) {
+    el.innerHTML = `<div class="empty"><div class="ei">🔩</div><div class="et">لا توجد قطع غيار</div><div class="es">اضغط + لإضافة قطعة جديدة</div></div>`;
+    return;
+  }
+  el.innerHTML = PARTS.map((p, i) => `
+    <div class="cust-card fade-in" onclick="editPart(${i})" style="cursor:pointer">
+      <div class="cust-stripe" style="background:linear-gradient(90deg,var(--cyan),var(--blue))"></div>
+      <div class="cust-body" style="padding:12px 13px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:14px;font-weight:800">${p.name}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px">القطعة رقم ${i+1}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="background:rgba(6,182,212,.15);border:1px solid rgba(6,182,212,.3);border-radius:10px;padding:6px 14px;font-size:15px;font-weight:900;color:var(--cyan)">${p.price} ر.س</div>
+            <div style="color:var(--text2);font-size:18px">✏️</div>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openAddPart() {
+  document.getElementById('part-modal-title').textContent = '➕ إضافة قطعة جديدة';
+  document.getElementById('part-edit-idx').value = '-1';
+  document.getElementById('part-edit-name').value = '';
+  document.getElementById('part-edit-price').value = '';
+  document.getElementById('part-delete-btn').style.display = 'none';
+  openModal('modal-part');
+}
+
+function editPart(idx) {
+  const p = PARTS[idx];
+  document.getElementById('part-modal-title').textContent = '✏️ تعديل قطعة الغيار';
+  document.getElementById('part-edit-idx').value = idx;
+  document.getElementById('part-edit-name').value = p.name;
+  document.getElementById('part-edit-price').value = p.price;
+  document.getElementById('part-delete-btn').style.display = 'flex';
+  openModal('modal-part');
+}
+
+function savePart() {
+  const name  = document.getElementById('part-edit-name').value.trim();
+  const price = parseFloat(document.getElementById('part-edit-price').value) || 0;
+  if (!name) return toast('⚠️ أدخل اسم القطعة');
+  const idx = parseInt(document.getElementById('part-edit-idx').value);
+  if (idx === -1) {
+    PARTS.push({name, price});
+    toast('✅ تم إضافة القطعة');
+  } else {
+    PARTS[idx] = {name, price};
+    toast('✅ تم حفظ التعديل');
+  }
+  saveParts();
+  closeModal('modal-part');
+  renderPartsMgmt();
+}
+
+function deletePart() {
+  const idx = parseInt(document.getElementById('part-edit-idx').value);
+  if (idx < 0) return;
+  PARTS.splice(idx, 1);
+  saveParts();
+  closeModal('modal-part');
+  renderPartsMgmt();
+  toast('🗑️ تم الحذف');
+}
+
+// ════════════════════════════════════
+//  INIT
+// ════════════════════════════════════
+renderHome();
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// Export all functions to window so HTML onclick works with ES module
+window.nav=nav; window.setFilter=setFilter; window.callClient=callClient;
+window.openMap=openMap; window.startMaintain=startMaintain; window.openCust=openCust;
+window.deleteCustomer=deleteCustomer; window.doOCR=doOCR; window.importCustomers=importCustomers;
+window.goStep=goStep; window.takePhoto=takePhoto; window.gotPhoto=gotPhoto;
+window.toggleChip=toggleChip; window.goToInvoice=goToInvoice;
+window.addPart=addPart; window.partChanged=partChanged; window.removePart=removePart;
+window.calcTotal=calcTotal; window.sendInvoiceWA=sendInvoiceWA; window.generatePDF=generatePDF;
+window.renderHistory=renderHistory; window.openModal=openModal; window.closeModal=closeModal;
+window.openAddModal=openAddModal; window.openSettings=openSettings; window.saveSettings=saveSettings;
+window.addManual=addManual; window.viewInvoice=viewInvoice; window.renderPartsMgmt=renderPartsMgmt;
+window.openAddPart=openAddPart; window.editPart=editPart; window.savePart=savePart;
+window.deletePart=deletePart; window.completeMaintenance=completeMaintenance;
+</script>
+</body>
+</html>
